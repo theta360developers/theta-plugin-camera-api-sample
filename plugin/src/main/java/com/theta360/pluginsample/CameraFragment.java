@@ -42,6 +42,9 @@ import java.util.Date;
  * CameraFragment
  */
 public class CameraFragment extends Fragment {
+    static final int CAMCORDER_QUALITY_2K_EQUI = 10014;
+    static final int CAMCORDER_QUALITY_4K_EQUI = 10013;
+
     public static final String DCIM = Environment.getExternalStoragePublicDirectory(
             Environment.DIRECTORY_DCIM).getPath();
     private SurfaceHolder mSurfaceHolder;
@@ -57,6 +60,8 @@ public class CameraFragment extends Fragment {
     private boolean isShutter = false;
     private File instanceRecordMP4;
     private File instanceRecordWAV;
+    private boolean isVideo2K = false;
+
     private MediaRecorder.OnInfoListener onInfoListener = new MediaRecorder.OnInfoListener() {
         @Override
         public void onInfo(MediaRecorder mr, int what, int extra) {
@@ -245,12 +250,20 @@ public class CameraFragment extends Fragment {
                     .setParameters("RicMicSurroundVolumeLevel=RicMicSurroundVolumeLevelNormal");
 
             mParameters.set("RIC_PROC_STITCHING", "RicStaticStitching");
-            mParameters.set("RIC_SHOOTING_MODE", "RicMovieRecording4kEqui");
 
-            // for 4K video
-            CamcorderProfile camcorderProfile = CamcorderProfile.get(mCameraId, 10013);
+            CamcorderProfile camcorderProfile;
+            if(isVideo2K) {
+                // for FHD video
+                mParameters.set("RIC_SHOOTING_MODE", "RicMovieRecording2kEqui");
+                camcorderProfile = CamcorderProfile.get(mCameraId, CAMCORDER_QUALITY_2K_EQUI);
+                mParameters.set("video-size", "1920x960");
+            }else{
+                // for 4K video
+                mParameters.set("RIC_SHOOTING_MODE", "RicMovieRecording4kEqui");
+                camcorderProfile = CamcorderProfile.get(mCameraId, CAMCORDER_QUALITY_4K_EQUI);
+                mParameters.set("video-size", "3840x1920");
+            }
 
-            mParameters.set("video-size", "3840x1920");
             mParameters.set("recording-hint", "true");
 
             mCamera.setParameters(mParameters);
@@ -266,7 +279,13 @@ public class CameraFragment extends Fragment {
             camcorderProfile.audioChannels = 1;
 
             mMediaRecorder.setProfile(camcorderProfile);
-            mMediaRecorder.setVideoEncodingBitRate(56000000); // 56 Mbps
+            if(isVideo2K) {
+                // for FHD video
+                mMediaRecorder.setVideoEncodingBitRate(32000000); // 32 Mbps
+            }else {
+                // for 4K video
+                mMediaRecorder.setVideoEncodingBitRate(56000000); // 56 Mbps
+            }
             mMediaRecorder.setVideoFrameRate(30); // 30 fps
             mMediaRecorder.setMaxDuration(1500000); // max: 25 min
             mMediaRecorder.setMaxFileSize(20401094656L); // max: 19 GB
